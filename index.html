@@ -3,30 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>오늘의 급식</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .school {
+      text-align: center;
+      font-size: 20px;
+    }
+
+    .date {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    #meal {
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
 
   <h1>🍚 오늘의 급식</h1>
 
-  <h2>상인고등학교</h2>
+  <div class="school">
+    경북대학교사범대학부설고등학교
+  </div>
 
-  <p>2026년 9월 11일</p>
+  <div class="date" id="date"></div>
 
-  <hr>
+  <div id="meal">
+    급식 정보를 불러오는 중입니다...
+  </div>
 
-  <h3>오늘의 메뉴</h3>
+  <button onclick="loadMeal(1)">내일 급식 보기</button>
 
-  <ul>
-    <li>현미밥</li>
-    <li>미역국</li>
-    <li>제육볶음</li>
-    <li>배추김치</li>
-    <li>요구르트</li>
-  </ul>
+  <script>
 
-  <button>내일 급식 보기</button>
+    const API_KEY = "27d54acb893e4f3b8a6b51053d1dc7ad";
+
+    const OFFICE_CODE = "D10";
+    const SCHOOL_CODE = "7004180";
+
+    function formatDate(date) {
+
+      const year = date.getFullYear();
+
+      const month =
+        String(date.getMonth() + 1).padStart(2, "0");
+
+      const day =
+        String(date.getDate()).padStart(2, "0");
+
+      return year + month + day;
+    }
+
+
+    function displayDate(date) {
+
+      document.getElementById("date").textContent =
+        date.getFullYear() + "년 "
+        + (date.getMonth() + 1) + "월 "
+        + date.getDate() + "일";
+
+    }
+
+
+    async function loadMeal(addDay = 0) {
+
+      const date = new Date();
+
+      date.setDate(date.getDate() + addDay);
+
+      displayDate(date);
+
+      const mealDate = formatDate(date);
+
+
+      const url =
+        "https://open.neis.go.kr/hub/mealServiceDietInfo"
+        + "?KEY=" + API_KEY
+        + "&Type=json"
+        + "&pIndex=1"
+        + "&pSize=100"
+        + "&ATPT_OFCDC_SC_CODE=" + OFFICE_CODE
+        + "&SD_SCHUL_CODE=" + SCHOOL_CODE
+        + "&MLSV_YMD=" + mealDate;
+
+
+      try {
+
+        const response = await fetch(url);
+
+        const data = await response.json();
+
+
+        if (!data.mealServiceDietInfo) {
+
+          document.getElementById("meal").innerHTML =
+            "오늘은 급식 정보가 없습니다.";
+
+          return;
+
+        }
+
+
+        const meals =
+          data.mealServiceDietInfo[1].row;
+
+
+        const lunch =
+          meals.find(
+            meal => meal.MMEAL_SC_NM === "중식"
+          );
+
+
+        if (!lunch) {
+
+          document.getElementById("meal").innerHTML =
+            "중식 정보가 없습니다.";
+
+          return;
+
+        }
+
+
+        const menu =
+          lunch.DDISH_NM.replaceAll("<br/>", "<br>");
+
+
+        document.getElementById("meal").innerHTML =
+          "<h2>오늘의 메뉴</h2>"
+          + menu;
+
+      }
+
+      catch (error) {
+
+        console.error(error);
+
+        document.getElementById("meal").innerHTML =
+          "급식 정보를 불러오지 못했습니다.";
+
+      }
+
+    }
+
+
+    loadMeal();
+
+  </script>
 
 </body>
 </html>
